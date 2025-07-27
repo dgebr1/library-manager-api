@@ -66,27 +66,27 @@ export class AuthController {
     return this.authService.signup(signupDto);
   }
 
-  // @Post('create-admin')
-  // @ApiOperation({ summary: 'Create admin user for testing' })
-  // @ApiResponse({ status: 201, description: 'Admin user created successfully' })
-  // async createAdmin() {
-  //   const adminData = {
-  //     username: 'admin',
-  //     email: 'admin@library.com',
-  //     password: 'admin123',
-  //     role: 'admin' as const,
-  //   };
+  @Post('create-admin')
+  @ApiOperation({ summary: 'Create admin user for testing' })
+  @ApiResponse({ status: 201, description: 'Admin user created successfully' })
+  async createAdmin() {
+    const adminData = {
+      username: 'admin',
+      email: 'admin@library.com',
+      password: 'admin123',
+      role: 'admin' as const,
+    };
     
-  //   try {
-  //     const user = await this.staffService.create(adminData);
-  //     return { message: 'Admin user created successfully', user: { id: user.id, username: user.username, email: user.email, role: user.role } };
-  //   } catch (error) {
-  //     if (error.message.includes('already exists')) {
-  //       return { message: 'Admin user already exists' };
-  //     }
-  //     throw error;
-  //   }
-  // }
+    try {
+      const user = await this.staffService.create(adminData);
+      return { message: 'Admin user created successfully', user: { id: user.id, username: user.username, email: user.email, role: user.role } };
+    } catch (error) {
+      if (error.message.includes('already exists')) {
+        return { message: 'Admin user already exists' };
+      }
+      throw error;
+    }
+  }
 
   @Get('profile')
   @UseGuards(JwtAuthGuard)
