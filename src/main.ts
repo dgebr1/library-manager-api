@@ -2,38 +2,65 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { ExpressAdapter } from '@nestjs/platform-express';
+import express from 'express';
 
-async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
 
-  // Enable CORS
-  app.enableCors()
 
-  // Enable validation
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    forbidNonWhitelisted: true,
-    transform: true,
-  }));
+const server = express();
 
-  // Configure Swagger
+export const createNestServer = async (expressInstance: express.Express) => {
+  const app = await NestFactory.create(AppModule, new ExpressAdapter(expressInstance));
+
+  // Enable CORS with specific configuration
+  app.enableCors({
+    origin: true, // Allow all origins in development
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+    credentials: true,
+  });
+
+  // Validation
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
+
+  // Swagger Setup
   const config = new DocumentBuilder()
     .setTitle('Library Manager API')
-    .setDescription('A REST API for managing a library system with books, members, and borrowing operations')
+    .setDescription('REST API for managing books, members, and borrowing operations')
     .setVersion('1.0')
     .addBearerAuth()
-    .addTag('auth', 'Authentication operations')
-    .addTag('books', 'Book management operations')
-    .addTag('members', 'Member management operations')
-    .addTag('borrow-records', 'Borrow and return operations')
-    .addTag('genres', 'Genre management operations')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document);
 
-  await app.listen(process.env.PORT ?? 3000);
-  console.log('Library Manager API is running on http://localhost:3000');
-  console.log('Swagger documentation is available at http://localhost:3000/api');
+  SwaggerModule.setup('api', app, document, {
+    customCssUrl: 'https://unpkg.com/swagger-ui-dist/swagger-ui.css',
+    customJs: [
+      'https://unpkg.com/swagger-ui-dist/swagger-ui-bundle.js',
+      'https://unpkg.com/swagger-ui-dist/swagger-ui-standalone-preset.js',
+    ],
+  });
+
+  // Optional health check endpoint for Vercel monitoring
+  app.getHttpAdapter().get('/healthz', (_req, res) => res.send('OK'));
+
+  await app.init();
+  return app;
+};
+
+// Local Dev Mode Only
+if (!process.env.VERCEL) {
+  createNestServer(server).then(() => {
+    const port = process.env.PORT || 3000;
+    server.listen(port, () => {
+      console.log(`✅ Library Manager API running at http://localhost:${port}`);
+      console.log(`📚 Swagger docs available at http://localhost:${port}/api`);
+    });
+  });
 }
-bootstrap();

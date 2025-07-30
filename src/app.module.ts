@@ -18,10 +18,11 @@ import { Staff } from './entities/staff.entity';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
-      type: 'sqlite',
-      database: 'library.db',
+      type: 'postgres',
+      url: process.env.DATABASE_URL,
+      ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : false,
       entities: [Book, Member, BorrowRecord, Genre, Staff],
-      synchronize: true, // Only for development
+      synchronize: process.env.NODE_ENV !== 'production',
     }),
     BooksModule,
     MembersModule,
